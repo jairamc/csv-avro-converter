@@ -5,9 +5,19 @@ import java.math.BigDecimal
 
 import com.opencsv
 import com.opencsv.CSVParser
+import me.jairam.schema.{
+  DataSchema,
+  DataType,
+  NULL,
+  INT,
+  LONG,
+  DECIMAL,
+  DOUBLE,
+  BOOLEAN,
+  STRING
+}
 
 import collection.JavaConverters.asScalaIteratorConverter
-
 import scala.util.control.Exception._
 
 class CSVReader(
@@ -195,9 +205,3 @@ class CSVReader(
     }
   }
 }
-
-trait CsvError {
-  def msg: String
-}
-
-case class DataError(msg: String) extends CsvError

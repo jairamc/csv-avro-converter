@@ -1,4 +1,4 @@
-package me.jairam.csv
+package me.jairam.schema
 
 case class DataSchema(
     columnName: String,

@@ -4,6 +4,7 @@ import java.io.File
 
 import me.jairam.avro.AvroWriter
 import me.jairam.csv.CSVReader
+import me.jairam.schema.Builder
 import org.rogach.scallop.ScallopConf
 
 class CsvAvroConverter(args: Seq[String]) extends ScallopConf(args) {
@@ -26,7 +27,7 @@ object CsvAvroConverter extends App {
     schema <- csvReader.inferSchema()
   } {
     val avroSchema =
-      avroWriter.buildSchema(schema, input.getName, input.getParent)
+      Builder.buildSchema(schema, input.getName, input.getParent)
     avroWriter.write(csvReader.rows(), avroSchema)
   }
 
