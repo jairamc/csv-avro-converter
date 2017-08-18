@@ -25,9 +25,10 @@ object CsvAvroConverter extends App {
   for {
     schema <- csvReader.inferSchema()
   } {
-    val avroSchema = avroWriter.buildSchema(schema, input.getName, input.getParent)
+    val avroSchema =
+      avroWriter.buildSchema(schema, input.getName, input.getParent)
     avroWriter.write(csvReader.rows(), avroSchema)
   }
-  
+
   println(s"${output.getAbsolutePath} created")
 }

@@ -11,13 +11,16 @@ import collection.JavaConverters.asScalaIteratorConverter
 import scala.util.control.Exception._
 
 class CSVReader(
-  file: File
-, separator: Char = CSVParser.DEFAULT_SEPARATOR
-, quoteChar: Char = CSVParser.DEFAULT_QUOTE_CHARACTER
-, escapeChar: Char = CSVParser.DEFAULT_ESCAPE_CHARACTER
+    file: File,
+    separator: Char = CSVParser.DEFAULT_SEPARATOR,
+    quoteChar: Char = CSVParser.DEFAULT_QUOTE_CHARACTER,
+    escapeChar: Char = CSVParser.DEFAULT_ESCAPE_CHARACTER
 ) {
   private val reader =
-    new opencsv.CSVReader(new FileReader(file), separator, quoteChar, escapeChar)
+    new opencsv.CSVReader(new FileReader(file),
+                          separator,
+                          quoteChar,
+                          escapeChar)
 
   def rows(): Iterator[Array[String]] = reader.iterator().asScala
 
@@ -28,7 +31,8 @@ class CSVReader(
 
     // Start with the assumption that the field is not nullable. Set the type to NullType as it will be inferred later.
     // At all points in this file, nullable must be explicitly set
-    val types = for (header <- headers) yield DataSchema(header, NULL, nullable = 0)
+    val types = for (header <- headers)
+      yield DataSchema(header, NULL, nullable = 0)
 
     val schemaWithNullTypes =
       rows.foldLeft[Array[DataSchema]](types) {
@@ -39,26 +43,31 @@ class CSVReader(
     // If at the end of inference, the field still stays as NullType change type to String type and set nullable to true
     Right(
       for (ds <- schemaWithNullTypes) yield {
-        if (ds.dataType == NULL) ds.copy(dataType = STRING, nullable = 1) else ds
+        if (ds.dataType == NULL) ds.copy(dataType = STRING, nullable = 1)
+        else ds
       }
     )
   }
 
-  private def inferRowType(rowSoFar: Array[DataSchema], next: Array[String]): Array[DataSchema] = {
+  private def inferRowType(rowSoFar: Array[DataSchema],
+                           next: Array[String]): Array[DataSchema] = {
 
     val inferred = rowSoFar.clone()
 
     var i = 0
-    while (i < math.min(rowSoFar.length, next.length)) {  // May have columns on right missing.
+    while (i < math.min(rowSoFar.length, next.length)) { // May have columns on right missing.
       inferred(i) = inferField(rowSoFar(i), next(i))
-      i+=1
+      i += 1
     }
     inferred
   }
 
-  private def mergeRowTypes(first: Array[DataSchema], second: Array[DataSchema]): Array[DataSchema] = {
-    first.zip(second).map { case (a, b) =>
-      findTightestCommonType(a, b).getOrElse(a.copy(dataType = NULL, nullable = 1))
+  private def mergeRowTypes(first: Array[DataSchema],
+                            second: Array[DataSchema]): Array[DataSchema] = {
+    first.zip(second).map {
+      case (a, b) =>
+        findTightestCommonType(a, b).getOrElse(
+          a.copy(dataType = NULL, nullable = 1))
     }
   }
 
@@ -71,20 +80,19 @@ class CSVReader(
       typeSoFar.copy(dataType = NULL)
     } else {
       typeSoFar.dataType match {
-        case NULL => tryParseInteger(typeSoFar, field)
-        case INT => tryParseInteger(typeSoFar, field)
-        case LONG => tryParseLong(typeSoFar, field)
+        case NULL    => tryParseInteger(typeSoFar, field)
+        case INT     => tryParseInteger(typeSoFar, field)
+        case LONG    => tryParseLong(typeSoFar, field)
         case DECIMAL => tryParseDecimal(typeSoFar, field)
-        case DOUBLE => tryParseDouble(typeSoFar, field)
+        case DOUBLE  => tryParseDouble(typeSoFar, field)
         case BOOLEAN => tryParseBoolean(typeSoFar, field)
-        case STRING => typeSoFar
-        case other: DataType =>
-          throw new UnsupportedOperationException(s"Unexpected data type $other")
+        case STRING  => typeSoFar
       }
     }
   }
 
-  private def tryParseInteger(typeSoFar: DataSchema, field: String): DataSchema = {
+  private def tryParseInteger(typeSoFar: DataSchema,
+                              field: String): DataSchema = {
     if ((allCatch opt field.toInt).isDefined) {
       typeSoFar.copy(dataType = INT)
     } else {
@@ -100,7 +108,8 @@ class CSVReader(
     }
   }
 
-  private def tryParseDecimal(typeSoFar: DataSchema, field: String): DataSchema = {
+  private def tryParseDecimal(typeSoFar: DataSchema,
+                              field: String): DataSchema = {
     val decimalTry = allCatch opt {
       // `BigDecimal` conversion can fail when the `field` is not a form of number.
       val bigDecimal = new BigDecimal(field)
@@ -110,7 +119,9 @@ class CSVReader(
         // `DecimalType` conversion can fail when
         //   1. The precision is bigger than 38.
         //   2. scale is bigger than precision.
-        typeSoFar.copy(dataType = DECIMAL, precision = bigDecimal.precision, scale = bigDecimal.scale)
+        typeSoFar.copy(dataType = DECIMAL,
+                       precision = bigDecimal.precision,
+                       scale = bigDecimal.scale)
       } else {
         tryParseDouble(typeSoFar, field)
       }
@@ -118,7 +129,8 @@ class CSVReader(
     decimalTry.getOrElse(tryParseDouble(typeSoFar, field))
   }
 
-  private def tryParseDouble(typeSoFar: DataSchema, field: String): DataSchema = {
+  private def tryParseDouble(typeSoFar: DataSchema,
+                             field: String): DataSchema = {
     if ((allCatch opt field.toDouble).isDefined) {
       typeSoFar.copy(dataType = DOUBLE)
     } else {
@@ -126,7 +138,8 @@ class CSVReader(
     }
   }
 
-  private def tryParseBoolean(typeSoFar: DataSchema, field: String): DataSchema = {
+  private def tryParseBoolean(typeSoFar: DataSchema,
+                              field: String): DataSchema = {
     if ((allCatch opt field.toBoolean).isDefined) {
       typeSoFar.copy(dataType = BOOLEAN)
     } else {
@@ -134,23 +147,24 @@ class CSVReader(
     }
   }
 
+  private val numericPrecedence: IndexedSeq[DataType] =
+    IndexedSeq(INT, LONG, DOUBLE)
 
-  private val numericPrecedence: IndexedSeq[DataType] = IndexedSeq(
-    BYTE,
-    SHORT,
-    INT,
-    LONG,
-    DOUBLE)
-
-  private def findTightestCommonType(a: DataSchema, b: DataSchema): Option[DataSchema] = {
-    require(a.columnName == b.columnName, s"Cannot find common type for different columns. ${a.columnName} != ${b.columnName}")
+  private def findTightestCommonType(a: DataSchema,
+                                     b: DataSchema): Option[DataSchema] = {
+    require(
+      a.columnName == b.columnName,
+      s"Cannot find common type for different columns. ${a.columnName} != ${b.columnName}")
     (a.dataType, b.dataType) match {
       // We started off with all fields being NullType
-      case (NULL, NULL) => Some(a.copy(nullable = 1)) // Two NullTypes means its nullable
-      case (t1, t2) if t1 == t2 => Some(a) // They are same, but not both NullType
-      case (_, NULL) => Some(a.copy(nullable = 1)) // Null field found, is nullable
+      case (NULL, NULL) =>
+        Some(a.copy(nullable = 1)) // Two NullTypes means its nullable
+      case (t1, t2) if t1 == t2 =>
+        Some(a) // They are same, but not both NullType
+      case (_, NULL) =>
+        Some(a.copy(nullable = 1)) // Null field found, is nullable
       // Was previously NullType, set to new Type. Because we initialized `nullable` to false, this field will be marked as not nullable until futher inference
-      case (NULL, _) => Some(b)
+      case (NULL, _)   => Some(b)
       case (STRING, _) => Some(a.copy(dataType = STRING))
       case (_, STRING) => Some(a.copy(dataType = STRING))
 
@@ -171,7 +185,10 @@ class CSVReader(
           // DecimalType can't support precision > 38
           Some(a.copy(dataType = DOUBLE))
         } else {
-          Some(a.copy(dataType = DECIMAL, precision = range + scale, scale = scale))
+          Some(
+            a.copy(dataType = DECIMAL,
+                   precision = range + scale,
+                   scale = scale))
         }
 
       case _ => None
@@ -179,7 +196,7 @@ class CSVReader(
   }
 }
 
-trait CsvError{
+trait CsvError {
   def msg: String
 }
 
