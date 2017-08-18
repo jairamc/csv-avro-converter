@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 
 import org.apache.avro.{LogicalTypes, Schema}
 
-import collection.JavaConverters.asScalaBufferConverter
+import scala.collection.JavaConverters.asScalaBufferConverter
 
 package object schema {
 
