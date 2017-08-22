@@ -31,7 +31,7 @@ class BuilderSpec extends FlatSpec with Matchers {
       case Right(s) => s shouldEqual expectedSchema
       case Left(f) => fail(f.msg)
     }
-    
+
   }
 
 }
