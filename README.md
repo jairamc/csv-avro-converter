@@ -12,6 +12,10 @@ end, this tool borrows very heavily from
 
 - [JDK][jdk] v1.8+
 
+## Download
+
+You can download the latest CLI from the [release page](https://github.com/jairamc/csv-avro-converter/releases)
+
 ## Modules
 
 There are two modules in this tool:
