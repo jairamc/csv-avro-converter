@@ -1,0 +1,59 @@
+{
+  "type": "record",
+  "name": "customers",
+  "fields": [
+    {
+      "name": "id",
+      "type": [
+        "null",
+        {
+          "type": "bytes",
+          "logicalType": "decimal",
+          "precision": 32,
+          "scale": 0
+        }
+      ],
+      "default": null
+    },
+    {
+      "name": "firstname",
+      "type": "string"
+    },
+    {
+      "name": "lastname",
+      "type": "string"
+    },
+    {
+      "name": "account",
+      "type": "string"
+    },
+    {
+      "name": "balance",
+      "type": "long"
+    },
+    {
+      "name": "active",
+      "type": "boolean"
+    },
+    {
+      "name": "credit",
+      "type": [
+        "null",
+        "double"
+      ],
+      "default": null
+    },
+    {
+      "name": "branch",
+      "type": "int"
+    },
+    {
+      "name": "notes",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null
+    }
+  ]
+}

@@ -8,6 +8,12 @@ import scala.collection.JavaConverters.asScalaBufferConverter
 
 package object schema {
 
+  trait SchemaError {
+    def msg: String
+  }
+
+  case class InvalidSchemaError(msg: String) extends SchemaError
+
   implicit class RichAvroField(field: Schema.Field) {
     def cast(value: String): Any = {
       getType() match {
