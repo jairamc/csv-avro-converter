@@ -1,14 +1,16 @@
 # CSV to AVRO Converter
 
+[![Build Status](https://travis-ci.org/jairamc/csv-avro-converter.svg?branch=master)](https://travis-ci.org/jairamc/csv-avro-converter)
+
 ## Introduction
 
-A simple library and CLI tool to converter a CSV file to Avro file. 
-The main challenge when doing this is generating the Avro Schema. To that 
-end, this tool borrows very heavily from 
+A simple library and CLI tool to converter a CSV file to Avro file.
+The main challenge when doing this is generating the Avro Schema. To that
+end, this tool borrows very heavily from
 [Spark's CSV Inference code](https://github.com/apache/spark/blob/master/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/csv/CSVInferSchema.scala).
 
 
-## Prerequisites 
+## Prerequisites
 
 - [JDK][jdk] v1.8+
 
@@ -34,13 +36,13 @@ csv-avro-conveter -i input.csv -o output.avro
 
 ### lib
 
-This can be used in any project where the conversion might be required. 
+This can be used in any project where the conversion might be required.
 
 ```scala
   import me.jairam.csv.CsvReader
   import me.jairam.avro.AvroWriter
   import me.jairam.schema.Builder.buildSchema
-  
+
   val csvReader = new CsvReader(inputFile)
   val avroWriter = new AvroWriter(outputFile)
 
