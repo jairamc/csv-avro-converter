@@ -1,62 +1,93 @@
 package me.jairam.csv
 
-import java.io.{File, FileReader}
+import java.io.{File, FileReader, IOException}
 import java.math.BigDecimal
 
 import com.opencsv
 import com.opencsv.CSVParser
 import me.jairam.schema.{
-  DataSchema,
-  DataType,
-  NULL,
-  INT,
-  LONG,
+  BOOLEAN,
   DECIMAL,
   DOUBLE,
-  BOOLEAN,
+  DataSchema,
+  DataType,
+  INT,
+  LONG,
+  NULL,
   STRING
 }
+import org.apache.tika.Tika
 
 import collection.JavaConverters.asScalaIteratorConverter
+import scala.util.Try
 import scala.util.control.Exception._
 
-class CSVReader(
+class CsvReader(
     file: File,
     separator: Char = CSVParser.DEFAULT_SEPARATOR,
     quoteChar: Char = CSVParser.DEFAULT_QUOTE_CHARACTER,
     escapeChar: Char = CSVParser.DEFAULT_ESCAPE_CHARACTER
 ) {
-  private val reader =
-    new opencsv.CSVReader(new FileReader(file),
-                          separator,
-                          quoteChar,
-                          escapeChar)
 
-  def rows(): Iterator[Array[String]] = reader.iterator().asScala
+  /**
+    * Retrive rows for a CSV files
+    * @return Iterator over the CSV file with each row as `Array[String]`
+    */
+  def rows(): Either[CsvError, Iterator[Array[String]]] =
+    try {
+      if (!file.exists() || file.isDirectory || !file.canRead || !isCsvFile(
+            file)) {
+        Left(IOError("Input file should be a single CSV."))
+      } else {
+        val reader = new opencsv.CSVReader(new FileReader(file),
+                                           separator,
+                                           quoteChar,
+                                           escapeChar)
 
-  def inferSchema(): Either[CsvError, Array[DataSchema]] = {
-    val rows = reader.iterator().asScala
-    if (!rows.hasNext) return Left(DataError("Empty file"))
-    val headers = rows.next()
-
-    // Start with the assumption that the field is not nullable. Set the type to NullType as it will be inferred later.
-    // At all points in this file, nullable must be explicitly set
-    val types = for (header <- headers)
-      yield DataSchema(header, NULL, nullable = 0)
-
-    val schemaWithNullTypes =
-      rows.foldLeft[Array[DataSchema]](types) {
-        case (typesSoFar, row) =>
-          mergeRowTypes(typesSoFar, inferRowType(typesSoFar, row))
+        val iterator = reader.iterator()
+        if (iterator.hasNext) {
+          Right(iterator.asScala)
+        } else {
+          Left(DataError("Empty File"))
+        }
       }
+    } catch {
+      case e: RuntimeException =>
+        e.getCause match {
+          case ioe: IOException =>
+            Left(IOError(ioe.getMessage))
+          case _ =>
+            throw e
+        }
+    }
 
-    // If at the end of inference, the field still stays as NullType change type to String type and set nullable to true
-    Right(
+  /**
+    * Infer Schema for a file
+    * @return
+    */
+  def inferSchema(): Either[CsvError, Array[DataSchema]] = {
+
+    for (rows <- this.rows()) yield {
+      val headers = rows.next()
+
+      // Start with the assumption that the field is not nullable. Set the type to NullType as it will be inferred later.
+      // At all points in this file, nullable must be explicitly set
+      val types = for (header <- headers)
+        yield DataSchema(header, NULL, nullable = 0)
+
+      val schemaWithNullTypes =
+        rows.foldLeft[Array[DataSchema]](types) {
+          case (typesSoFar, row) =>
+            mergeRowTypes(typesSoFar, inferRowType(typesSoFar, row))
+        }
+
+      // If at the end of inference, the field still stays as NullType change type to String type and set nullable to true
+
       for (ds <- schemaWithNullTypes) yield {
         if (ds.dataType == NULL) ds.copy(dataType = STRING, nullable = 1)
         else ds
       }
-    )
+    }
   }
 
   private def inferRowType(rowSoFar: Array[DataSchema],
@@ -204,4 +235,10 @@ class CSVReader(
       case _ => None
     }
   }
+
+  private val CsvContentType = "text/csv"
+
+  private def isCsvFile(file: File): Boolean =
+    Try(new Tika().detect(file)).map(_ == CsvContentType).getOrElse(false)
+
 }

@@ -3,7 +3,7 @@ package me.jairam
 import java.io.File
 
 import me.jairam.avro.AvroWriter
-import me.jairam.csv.CSVReader
+import me.jairam.csv.CsvReader
 import me.jairam.schema.Builder
 import org.rogach.scallop.ScallopConf
 
@@ -20,15 +20,15 @@ object CsvAvroConverter extends App {
   val input = cli.in()
   val output = new File(cli.out())
 
-  val csvReader = new CSVReader(input)
+  val csvReader = new CsvReader(input)
   val avroWriter = new AvroWriter(output)
 
   for {
+    rows <- csvReader.rows()
     schema <- csvReader.inferSchema()
   } {
-    val avroSchema =
-      Builder.buildSchema(schema, input.getName, input.getParent)
-    avroWriter.write(csvReader.rows(), avroSchema)
+    val avroSchema = Builder.buildSchema(schema, input.getName, input.getParent)
+    avroWriter.write(rows, avroSchema)
   }
 
   println(s"${output.getAbsolutePath} created")

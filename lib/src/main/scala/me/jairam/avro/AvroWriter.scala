@@ -31,8 +31,8 @@ class AvroWriter(file: File) {
         if (file.exists()) file.delete()
         throw e
     } finally {
-      writer
-        .close() // Closing the writer even if the underlying file has been deleted is OK.
+      // Closing the writer even if the underlying file has been deleted is OK.
+      writer.close()
     }
   }
 }

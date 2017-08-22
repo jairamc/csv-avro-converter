@@ -8,4 +8,6 @@ package object csv {
 
   case class DataError(msg: String) extends CsvError
 
+  case class IOError(msg: String) extends CsvError
+
 }
