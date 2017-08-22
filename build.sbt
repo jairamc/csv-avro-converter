@@ -24,4 +24,5 @@ lazy val cli = (project in file("cli"))
       commonSettings,
       libraryDependencies += "org.rogach" %% "scallop" % "3.1.0"
     )
+    .enablePlugins(JavaAppPackaging)
 
